@@ -2,7 +2,7 @@
 
 Cursor 없이 실행하는 Windows용 개인 KTX 예약 보조 서버입니다.
 
-현재 버전: **1.1.1**
+현재 버전: **1.1.2**
 
 - 프론트엔드와 백엔드를 `http://127.0.0.1:8000` 하나로 통합
 - Node.js와 5173 서버는 실행할 필요 없음
@@ -26,6 +26,7 @@ Python 3.11 또는 3.12가 없다면 먼저 설치해야 합니다.
 | 서버 닫기 | `STOP_SERVER.bat` |
 | 화면만 다시 열기 | `OPEN_SERVER.bat` |
 | 최신 버전으로 업데이트 | `UPDATE.bat` |
+| 코레일 전용 브라우저 초기화 | `RESET_KORAIL_BROWSER.bat` |
 | 실제 코레일 모드 | `MODE_REAL_KORAIL.bat` |
 | 안전한 데모 모드 | `MODE_DEMO.bat` |
 
@@ -49,6 +50,10 @@ http://127.0.0.1:8000
 - 백업은 디스크 사용량을 줄이기 위해 최근 3개만 보관합니다.
 
 소스 코드와 최신 배포본: <https://github.com/kodexmaster7772/toy-booker>
+
+코레일 로그인 화면에서 `통신 중 에러`가 반복되지만 일반 Chrome에서는 정상이라면
+`RESET_KORAIL_BROWSER.bat`을 한 번 실행합니다. 이 파일은 자동화 전용 프로필을
+백업한 뒤 새로 만들며, 평소 사용하는 Chrome 프로필에는 손대지 않습니다.
 
 ## 권장 실행 순서
 
@@ -108,6 +113,7 @@ http://100.x.x.x:8000
 START_SERVER.bat              수동 서버 시작
 STOP_SERVER.bat               수동 서버 종료
 UPDATE.bat                    최신 버전 설치 및 자동 복구
+RESET_KORAIL_BROWSER.bat      자동화 전용 쿠키·세션 초기화
 INSTALL_ONCE.bat              최초 설치
 MODE_REAL_KORAIL.bat          실제 브라우저 모드 전환
 MODE_DEMO.bat                 데모 모드 전환
