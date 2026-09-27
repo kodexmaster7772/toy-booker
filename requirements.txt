@@ -1,0 +1,12 @@
+fastapi==0.115.12
+pydantic==2.11.5
+uvicorn[standard]==0.34.3
+sqlmodel==0.0.24
+pydantic-settings==2.9.1
+playwright==1.52.0
+opencv-python-headless==4.11.0.86
+numpy==2.2.6
+keyring==25.6.0
+python-multipart==0.0.20
+httpx==0.28.1
+pytest==8.4.0

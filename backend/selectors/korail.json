@@ -1,0 +1,60 @@
+{
+  "site_version": "korail-2026",
+  "main_url": "https://www.korail.com/ticket/main",
+  "login_url": "https://www.korail.com/ticket/login",
+  "search_url": "https://www.korail.com/ticket/search/general",
+  "login_success_selectors": [
+    "a:has-text('로그아웃')",
+    "button:has-text('로그아웃')"
+  ],
+  "security_challenge_texts": [
+    "자동입력 방지",
+    "보안문자",
+    "CAPTCHA",
+    "로봇이 아닙니다",
+    "본인인증"
+  ],
+  "reservation_success_texts": [
+    "예약이 완료",
+    "예약승차권",
+    "결제기한",
+    "결제하기",
+    "예약 내역"
+  ],
+  "reservation_button_template": "reserve-button.png",
+  "selectors": {
+    "account_id": [
+      "input[placeholder*='회원번호']",
+      "input[placeholder*='이메일']",
+      "input[placeholder*='휴대폰']",
+      "input[title*='회원번호']",
+      "input[name='memberNo']"
+    ],
+    "password": [
+      "input[placeholder*='비밀번호']",
+      "input[type='password']"
+    ],
+    "login_submit": [
+      "[role='tabpanel'] button:has-text('로그인')",
+      "button:has-text('로그인')"
+    ],
+    "departure": [
+      "input[name='txtGoStart']",
+      "input[title='출발역']"
+    ],
+    "arrival": [
+      "input[name='txtGoEnd']",
+      "input[title='도착역']"
+    ],
+    "date": [
+      "#startDate",
+      "input[name='startDate']",
+      "input[title='날짜입력']"
+    ],
+    "search_submit": [
+      "button.btn_lookup:has-text('열차 조회')",
+      "button:has-text('열차 조회')"
+    ],
+    "result_rows": "#tab_tab_info1 li, [role='tabpanel'] > ul > li, [role='tabpanel'] .train_list > li, [role='tabpanel'] .list_train > li, [role='tabpanel'] .ticket_list > li"
+  }
+}

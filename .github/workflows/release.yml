@@ -1,0 +1,55 @@
+name: Build Windows release
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Build release ZIP
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p package/ktx-auto-booker-backend
+          rsync -a ./ package/ktx-auto-booker-backend/ \
+            --exclude '.git' \
+            --exclude '.github' \
+            --exclude '.env' \
+            --exclude '.venv' \
+            --exclude '.pytest_cache' \
+            --exclude '__pycache__' \
+            --exclude 'data' \
+            --exclude 'frontend/node_modules' \
+            --exclude 'package' \
+            --exclude '*.pyc' \
+            --exclude '*.pyo' \
+            --exclude '*.db' \
+            --exclude '*.pid' \
+            --exclude '*.log'
+          cd package
+          zip -qr ../KTX-Auto-Booker-Windows.zip ktx-auto-booker-backend
+          cd ..
+          sha256sum KTX-Auto-Booker-Windows.zip > SHA256SUMS.txt
+
+      - name: Publish latest release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          gh release delete latest --cleanup-tag --yes || true
+          gh release create latest \
+            KTX-Auto-Booker-Windows.zip \
+            SHA256SUMS.txt \
+            --target "$GITHUB_SHA" \
+            --title "KTX Auto Booker $(cat VERSION)" \
+            --notes "Windows one-click package. Run INSTALL_ONCE.bat once, then START_SERVER.bat." \
+            --latest
