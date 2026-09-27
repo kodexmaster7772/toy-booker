@@ -150,6 +150,7 @@ class BookingWorkerManager:
             await self._set_status(reservation_id, ReservationStatus.STARTING, "브라우저를 시작합니다.")
             await self._log(LogLevel.INFO, "예약 자동화 작업을 시작했습니다.", reservation_id)
             await adapter.start()
+            await self._log(LogLevel.INFO, "코레일 전용 Chrome 창을 열었습니다.", reservation_id)
 
             credentials = self.credential_store.load()
             login_message = (
@@ -158,6 +159,7 @@ class BookingWorkerManager:
                 else "열린 코레일 브라우저에서 5분 안에 직접 로그인하세요."
             )
             await self._set_status(reservation_id, ReservationStatus.LOGIN, login_message)
+            await self._log(LogLevel.INFO, "코레일 메인 화면을 거쳐 로그인 화면에 접속합니다.", reservation_id)
             await adapter.login(credentials)
             await self._log(LogLevel.INFO, "로그인 확인이 완료되었습니다.", reservation_id)
 

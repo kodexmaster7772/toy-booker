@@ -202,40 +202,69 @@ class PlaywrightKorailAdapter:
 
     async def _dismiss_communication_error(self) -> bool:
         assert self.page is not None
-        dialogs = self.page.locator("[role='dialog']")
-        for index in range(await dialogs.count()):
-            dialog = dialogs.nth(index)
+        body_text = await self._body_text()
+        if "통신 중 에러" not in body_text and "잠시 후 다시 이용" not in body_text:
+            return False
+
+        buttons = self.page.get_by_role("button", name="확인", exact=True)
+        for index in range(await buttons.count() - 1, -1, -1):
+            button = buttons.nth(index)
             try:
-                if not await dialog.is_visible(timeout=300):
-                    continue
-                text_value = " ".join((await dialog.inner_text()).split())
-                if "통신 중 에러" not in text_value and "잠시 후 다시 이용" not in text_value:
-                    continue
-                confirm = dialog.get_by_role("button", name="확인", exact=True)
-                if await confirm.count():
-                    await confirm.first.click()
-                return True
+                if await button.is_visible(timeout=300):
+                    await button.click()
+                    await asyncio.sleep(0.7)
+                    return True
+            except Exception:
+                continue
+
+        fallback = self.page.locator("button:has-text('확인'), a:has-text('확인')")
+        for index in range(await fallback.count() - 1, -1, -1):
+            candidate = fallback.nth(index)
+            try:
+                if await candidate.is_visible(timeout=300):
+                    await candidate.click()
+                    await asyncio.sleep(0.7)
+                    return True
             except Exception:
                 continue
         return False
 
-    async def _open_login_page(self) -> None:
+    async def _navigate_to_login_from_main(self) -> None:
         assert self.page is not None
         await self.page.goto(self.profile["main_url"], wait_until="domcontentloaded")
         await self._wait_page_ready()
-        if await self._dismiss_communication_error():
-            await self.page.reload(wait_until="domcontentloaded")
-            await self._wait_page_ready()
+        await self._dismiss_communication_error()
+
+        login_candidates = [
+            self.page.get_by_role("link", name="로그인", exact=True),
+            self.page.locator("a[href*='/ticket/login']"),
+        ]
+        for candidate in login_candidates:
+            try:
+                if await candidate.count() and await candidate.first.is_visible(timeout=700):
+                    await candidate.first.click()
+                    await self.page.wait_for_url(re.compile(r"/ticket/login"), timeout=7000)
+                    await self._wait_page_ready()
+                    return
+            except Exception:
+                continue
 
         await self.page.goto(self.profile["login_url"], wait_until="domcontentloaded")
         await self._wait_page_ready()
-        if await self._dismiss_communication_error():
-            await self.page.reload(wait_until="domcontentloaded")
-            await self._wait_page_ready()
-            if await self._dismiss_communication_error():
-                raise UserActionRequired(
-                    "코레일 로그인 서버에서 통신 오류가 반복됩니다. 잠시 후 예약 시작을 다시 누르세요."
-                )
+
+    async def _open_login_page(self) -> None:
+        assert self.page is not None
+        for attempt in range(1, 4):
+            await self._navigate_to_login_from_main()
+            if not await self._dismiss_communication_error():
+                return
+            if attempt < 3:
+                await asyncio.sleep(2)
+
+        raise UserActionRequired(
+            "코레일 로그인 화면에서 통신 오류가 3회 반복되었습니다. "
+            "열린 창에서 일반 로그인 접속 여부를 확인한 뒤 잠시 후 다시 시도하세요."
+        )
 
     async def login(self, credentials: Credentials | None) -> None:
         assert self.page is not None
