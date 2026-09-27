@@ -112,6 +112,7 @@ class PlaywrightKorailAdapter:
         self.playwright: Playwright | None = None
         self.context: BrowserContext | None = None
         self.page: Page | None = None
+        self._using_bundled_chromium = False
 
     @staticmethod
     def _load_profile(path: Path) -> dict:
@@ -120,28 +121,51 @@ class PlaywrightKorailAdapter:
         except (OSError, json.JSONDecodeError) as exc:
             raise AutomationError(f"선택자 설정 파일을 읽을 수 없습니다: {path}") from exc
 
-    async def start(self) -> None:
-        self.playwright = await async_playwright().start()
-        profile_dir = self.settings.data_dir / "korail-browser-profile"
+    def _context_options(self, profile_dir: Path) -> dict:
         profile_dir.mkdir(parents=True, exist_ok=True)
-        context_options = {
+        return {
             "user_data_dir": str(profile_dir),
             "headless": self.settings.headless,
             "locale": "ko-KR",
             "timezone_id": "Asia/Seoul",
             "viewport": {"width": 1440, "height": 1000},
         }
-        try:
-            self.context = await self.playwright.chromium.launch_persistent_context(
-                channel="chrome",
-                **context_options,
-            )
-        except Exception:
-            self.context = await self.playwright.chromium.launch_persistent_context(
-                **context_options,
-            )
-        self.page = self.context.pages[0] if self.context.pages else await self.context.new_page()
+
+    async def _activate_context(self, context: BrowserContext) -> None:
+        self.context = context
+        self.page = context.pages[0] if context.pages else await context.new_page()
         self.page.set_default_timeout(self.settings.browser_timeout_ms)
+
+    async def _launch_bundled_chromium(self) -> None:
+        assert self.playwright is not None
+        if self.context is not None:
+            try:
+                await self.context.close()
+            except Exception:
+                pass
+        profile_dir = self.settings.data_dir / "korail-browser-profile-chromium"
+        context = await self.playwright.chromium.launch_persistent_context(
+            **self._context_options(profile_dir)
+        )
+        self._using_bundled_chromium = True
+        await self._activate_context(context)
+
+    async def start(self) -> None:
+        self.playwright = await async_playwright().start()
+        profile_dir = self.settings.data_dir / "korail-browser-profile"
+        try:
+            context = await self.playwright.chromium.launch_persistent_context(
+                channel="chrome",
+                **self._context_options(profile_dir),
+            )
+            await self._activate_context(context)
+        except Exception:
+            await self._launch_bundled_chromium()
+
+    @staticmethod
+    def _browser_was_closed(exc: Exception) -> bool:
+        message = str(exc).lower()
+        return "target page, context or browser has been closed" in message or "browser has been closed" in message
 
     async def _first_visible(self, selectors: list[str], timeout: int = 900) -> Locator | None:
         assert self.page is not None
@@ -268,7 +292,13 @@ class PlaywrightKorailAdapter:
 
     async def login(self, credentials: Credentials | None) -> None:
         assert self.page is not None
-        await self._open_login_page()
+        try:
+            await self._open_login_page()
+        except Exception as exc:
+            if self._using_bundled_chromium or not self._browser_was_closed(exc):
+                raise
+            await self._launch_bundled_chromium()
+            await self._open_login_page()
         await self._guard_security_challenge()
         if await self._logged_in():
             return
